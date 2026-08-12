@@ -42,15 +42,17 @@ async def handle_client(websocket):
 
             if action == "register_host":
                 host_port = data.get("port", 25565)
+                gossip_port = data.get("gossip_port", 25566)
                 
                 active_hosts[world_id] = {
                     "websocket": websocket,
                     "public_ip": remote_ip,
-                    "public_port": host_port
+                    "public_port": host_port,
+                    "gossip_port": gossip_port
                 }
                 current_world = world_id
                 is_host = True
-                logger.info(f"Host registered for world {world_id} at {remote_ip}:{host_port}")
+                logger.info(f"Host registered for world {world_id} at {remote_ip}:{host_port} (gossip: {gossip_port})")
                 await websocket.send(json.dumps({"status": "registered", "public_ip": remote_ip}))
 
             elif action == "join":
@@ -60,21 +62,24 @@ async def handle_client(websocket):
 
                 host_info = active_hosts[world_id]
                 client_port = data.get("port", 25565)
+                client_gossip = data.get("gossip_port", 25566)
 
-                logger.info(f"Client {remote_ip}:{client_port} is punching Host {host_info['public_ip']}:{host_info['public_port']}")
+                logger.info(f"Client {remote_ip}:{client_port} (gossip {client_gossip}) is punching Host {host_info['public_ip']}:{host_info['public_port']} (gossip {host_info['gossip_port']})")
 
                 # Tell Host to punch Client
                 punch_host_msg = json.dumps({
                     "action": "punch",
                     "target_ip": remote_ip,
-                    "target_port": client_port
+                    "target_port": client_port,
+                    "target_gossip_port": client_gossip
                 })
                 
                 # Tell Client to punch Host
                 punch_client_msg = json.dumps({
                     "action": "punch",
                     "target_ip": host_info["public_ip"],
-                    "target_port": host_info["public_port"]
+                    "target_port": host_info["public_port"],
+                    "target_gossip_port": host_info["gossip_port"]
                 })
 
                 await asyncio.gather(

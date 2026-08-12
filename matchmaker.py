@@ -17,7 +17,12 @@ async def handle_client(websocket):
     remote_ip = websocket.remote_address[0]
     remote_port = websocket.remote_address[1]
     
-    headers = websocket.request_headers
+    # Handle websockets version differences
+    if hasattr(websocket, 'request'):
+        headers = websocket.request.headers
+    else:
+        headers = getattr(websocket, 'request_headers', {})
+        
     if "x-forwarded-for" in headers:
         remote_ip = headers["x-forwarded-for"].split(",")[0].strip()
 
